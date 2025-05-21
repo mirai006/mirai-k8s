@@ -1,0 +1,5 @@
+- name: Install NFS client tools on all controlplane and workers
+  hosts: controlplane,workers
+  become: yes
+  roles:
+    - nfs-client

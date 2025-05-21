@@ -1,0 +1,17 @@
+- name: Set up NFS server on worker01 for monitoring
+  hosts: worker01
+  become: yes
+  roles:
+    - role: nfs-server
+      vars:
+        export_path: /data/monitoring
+        export_clients: 192.168.8.128/25
+
+- name: Set up NFS server on worker02 for logs
+  hosts: worker02
+  become: yes
+  roles:
+    - role: nfs-server
+      vars:
+        export_path: /data/logs
+        export_clients: 192.168.8.128/25
