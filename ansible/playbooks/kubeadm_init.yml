@@ -1,0 +1,40 @@
+- name: Initialize Kubernetes master node
+  hosts: controlplane
+  become: yes
+  tasks:
+    - name: Run kubeadm init with Flannel network CIDR
+      command: >
+        kubeadm init
+        --pod-network-cidr=10.244.0.0/16
+        --service-cidr=10.96.0.0/12
+        --apiserver-advertise-address={{ ansible_host }}
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Set up kubeconfig for ubuntu user
+      become_user: ubuntu
+      shell: |
+        mkdir -p $HOME/.kube
+        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+        chown $(id -u):$(id -g) $HOME/.kube/config
+
+    - name: Apply Flannel CNI plugin
+      become_user: ubuntu
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      command: >
+        kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+    - name: Generate kubeadm join command
+      command: kubeadm token create --print-join-command
+      register: join_command_output
+
+    - name: Save join command to file
+      copy:
+        dest: /home/ubuntu/mirai-k8s/ansible/generated/kubeadm_join_command.sh
+        content: "#!/bin/bash\n{{ join_command_output.stdout }}\n"
+        mode: '0600'
+
+    - name: Encrypt join command with ansible-vault
+      command: ansible-vault encrypt /home/ubuntu/mirai-k8s/ansible/generated/kubeadm_join_command.sh
+      when: "'ANSIBLE_VAULT' not in lookup('file', '/home/ubuntu/mirai-k8s/ansible/generated/kubeadm_join_command.sh')"
