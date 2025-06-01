@@ -97,7 +97,7 @@ sudo flashcp /usr/lib/u-boot/u-boot-rockchip-spi.bin /dev/mtd0
 ### ① シャットダウン：
 
 ```bash
-sudo poweroff
+sudo shutdown -h now
 ```
 
 ---
